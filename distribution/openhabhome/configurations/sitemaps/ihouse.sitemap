@@ -1,0 +1,5 @@
+sitemap ihouse label= "Menu" { 
+	Frame {
+		Group item=gGF label="Parter" icon="groundfloor"
+	}
+}

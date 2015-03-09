@@ -1,0 +1,11 @@
+Group
+All Group
+gGF (All)
+Group GF_Living "Salon" < video > (gGF)
+
+Switch Light_GF_Corridor_Ceiling 	"Ceiling" 		(GF_Living)
+Switch mute "Mute" (GF_Living) { samsungtv="OFF:Salon:KEY_MUTE, ON:Salon:KEY_MUTE" }
+//Switch YamahaPower "Yamaha Power" (GF_Living) { yamahareceiver="OFF:Salon:KEY_MUTE, ON:Salon:KEY_MUTE" }
+Switch Yamaha_Power "Power [%s]" <tv> (GF_Living) { yamahareceiver="uid=Salon, zone=main,  bindingType=power" }
+Switch SalonLight "SalonLight [%s]" <light> (GF_Living) { ilight="uid=gf0, out=3" }
+ 
