@@ -143,6 +143,7 @@
     <module>org.openhab.binding.nest</module>
     <module>org.openhab.binding.satel</module>
     <module>org.openhab.binding.ilight</module>
+    <module>org.openhab.binding.xm8dr</module>
   </modules>
 
 </project>
