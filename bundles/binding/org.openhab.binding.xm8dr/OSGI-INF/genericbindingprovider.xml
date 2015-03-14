@@ -13,6 +13,6 @@
    <implementation class="org.openhab.binding.xm8dr.internal.XM8DRGenericBindingProvider"/>
    <service>
       <provide interface="org.openhab.model.item.binding.BindingConfigReader"/>
-      <provide interface="org.openhab.binding.ilight.ILightBindingProvider"/>
+      <provide interface="org.openhab.binding.xm8dr.XM8DRBindingProvider"/>
    </service>
 </scr:component>

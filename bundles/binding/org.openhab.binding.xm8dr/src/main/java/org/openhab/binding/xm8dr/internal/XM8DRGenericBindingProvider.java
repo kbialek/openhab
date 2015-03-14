@@ -21,7 +21,7 @@ public class XM8DRGenericBindingProvider extends
 	
 	@Override
 	public String getBindingType() {
-		return "ilight";
+		return "xm8dr";
 	}
 
 	@Override
@@ -43,27 +43,27 @@ public class XM8DRGenericBindingProvider extends
 			throw new BindingConfigParseException(e.getMessage());
 		}
 		
-		ILightBindingConfig config = new ILightBindingConfig();
+		XM8DRBindingConfig config = new XM8DRBindingConfig();
 		config.uid = props.getProperty("uid");
 		config.out = Integer.valueOf(props.getProperty("out"));
 				
 		addBindingConfig(item, config);
 	}
 
-	static private class ILightBindingConfig implements BindingConfig {
+	static private class XM8DRBindingConfig implements BindingConfig {
 		public String uid;
 		public int out;
 	}
 
 	@Override
 	public String getUID(String itemName) {
-		ILightBindingConfig config = (ILightBindingConfig) this.bindingConfigs.get(itemName);
+		XM8DRBindingConfig config = (XM8DRBindingConfig) this.bindingConfigs.get(itemName);
 		return config.uid;
 	}
 	
 	@Override
 	public Integer getOut(String itemName) {
-		ILightBindingConfig config = (ILightBindingConfig) this.bindingConfigs.get(itemName);
+		XM8DRBindingConfig config = (XM8DRBindingConfig) this.bindingConfigs.get(itemName);
 		return config.out;
 	}
 	

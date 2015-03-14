@@ -74,7 +74,7 @@ public class XM8DRBinding extends AbstractActiveBinding<XM8DRBindingProvider> im
 
 	@Override
 	protected String getName() {
-		return "ILight Binding";
+		return "XM8DR Binding";
 	}
 
 	@Override
@@ -98,11 +98,5 @@ public class XM8DRBinding extends AbstractActiveBinding<XM8DRBindingProvider> im
 			throw new ConfigurationException("", "");
 		}
 	}
-
-//	@Override
-//	public void addBindingProvider(ILightBindingProvider provider) {
-//		super.addBindingProvider(provider);
-//	}
-//	
 	
 }

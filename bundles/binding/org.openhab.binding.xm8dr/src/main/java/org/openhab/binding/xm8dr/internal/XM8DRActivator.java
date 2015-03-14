@@ -32,7 +32,7 @@ public class XM8DRActivator implements BundleActivator {
 	 */
 	public void start(BundleContext bc) throws Exception {
 		context = bc;
-		logger.info("iLight binding has been started.");
+		logger.info("XM8DR binding has been started.");
 	}
 
 	/**
@@ -40,7 +40,7 @@ public class XM8DRActivator implements BundleActivator {
 	 */
 	public void stop(BundleContext bc) throws Exception {
 		context = null;
-		logger.info("iLight binding has been stopped.");
+		logger.info("XM8DR binding has been stopped.");
 	}
 	
 	/**

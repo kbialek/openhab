@@ -19,11 +19,11 @@
    <property name="event.topics" type="String" value="openhab/command/*"/>
    <property name="service.pid" type="String" value="org.openhab.xm8dr"/>
 
-   <reference interface="org.openhab.binding.ilight.ILightBindingProvider" 
+   <reference interface="org.openhab.binding.xm8dr.XM8DRBindingProvider" 
    				bind="addBindingProvider" 
    				unbind="removeBindingProvider"
    				cardinality="1..n" 
-   				name="ILightBindingProvider" 
+   				name="XM8DRBindingProvider" 
    				policy="dynamic" />
 
    <!--
