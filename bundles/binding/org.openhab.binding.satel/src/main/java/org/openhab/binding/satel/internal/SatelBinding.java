@@ -103,9 +103,11 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 		int timeout = getIntValue(config, "timeout", 5000);
 		String host = getStringValue(config, "host", null);
 		if (StringUtils.isNotBlank(host)) {
+			logger.info("Satel binding connecting using Ethm1");
 			this.satelModule = new Ethm1Module(host, getIntValue(config, "port", 7094), timeout,
 					(String) config.get("encryption_key"));
 		} else {
+			logger.info("Satel binding connecting using IntRS");
 			this.satelModule = new IntRSModule((String) config.get("port"), timeout);
 		}
 

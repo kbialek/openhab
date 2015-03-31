@@ -11,6 +11,7 @@ package org.openhab.binding.satel.config;
 import java.util.Map;
 
 import org.openhab.binding.satel.SatelBindingConfig;
+import org.openhab.binding.satel.internal.SatelBinding;
 import org.openhab.binding.satel.internal.event.IntegraStateEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
@@ -35,6 +36,8 @@ import org.openhab.core.library.types.OpenClosedType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class implements binding configuration for all items that represent
@@ -45,6 +48,8 @@ import org.openhab.model.item.binding.BindingConfigParseException;
  */
 public class IntegraStateBindingConfig extends SatelBindingConfig {
 
+	private static final Logger logger = LoggerFactory.getLogger(IntegraStateBindingConfig.class);
+	
 	private StateType stateType;
 	private int[] objectNumbers;
 	private Map<String, String> options;
@@ -121,6 +126,7 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 	 */
 	@Override
 	public State convertEventToState(Item item, SatelEvent event) {
+		logger.info("Event", event);
 		if (!(event instanceof IntegraStateEvent)) {
 			return null;
 		}

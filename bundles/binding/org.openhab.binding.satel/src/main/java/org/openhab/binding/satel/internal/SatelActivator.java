@@ -27,14 +27,14 @@ public final class SatelActivator implements BundleActivator {
 	 * Called whenever the OSGi framework starts our bundle
 	 */
 	public void start(BundleContext bc) throws Exception {
-		logger.debug("Satel binding has been started.");
+		logger.info("Satel binding has been started.");
 	}
 
 	/**
 	 * Called whenever the OSGi framework stops our bundle
 	 */
 	public void stop(BundleContext bc) throws Exception {
-		logger.debug("Satel binding has been stopped.");
+		logger.info("Satel binding has been stopped.");
 	}
 
 }
