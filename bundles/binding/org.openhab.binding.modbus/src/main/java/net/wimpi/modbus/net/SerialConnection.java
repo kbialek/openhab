@@ -168,7 +168,7 @@ public class SerialConnection
 
     // Set notifyOnBreakInterrup to allow event driven break handling.
     m_SerialPort.notifyOnBreakInterrupt(true);
-
+//    m_Transport.setReceiveTimeout(100);
 
     m_Open = true;
   }//open

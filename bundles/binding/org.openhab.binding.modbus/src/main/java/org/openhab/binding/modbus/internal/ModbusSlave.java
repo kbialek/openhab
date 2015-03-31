@@ -153,13 +153,15 @@ public abstract class ModbusSlave implements ModbusSlaveConnection {
 			int writeRegister) {
 		synchronized (storage) {
 			boolean b = translateCommand2Boolean(command);
-			if (((BitVector)storage).getBit(readRegister) != b) {
+			BitVector bits = (BitVector) storage;
+//			if (bits.getBit(readRegister) != b) {
 				if (b) {
 					doSetCoil(getStart() + writeRegister, true);
 				} else {
 					doSetCoil(getStart() + writeRegister, readRegister == writeRegister ? false : true);
 				}
-			}
+				bits.setBit(readRegister, b);
+//			}
 		}
 	}
 
