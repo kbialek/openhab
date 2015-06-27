@@ -63,6 +63,7 @@ public class IntRSModule extends SatelModule {
 
 			this.port = (SerialPort) rxtx.getCommPort(portName,	CommPortIdentifier.PORT_SERIAL);
 			this.port.setSerialPortParams(19200, SerialPort.DATABITS_8,	SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+			this.port.enableReceiveTimeout(getTimeout());
 			
 			return communicationChannel;
 		} catch (Exception e) {
