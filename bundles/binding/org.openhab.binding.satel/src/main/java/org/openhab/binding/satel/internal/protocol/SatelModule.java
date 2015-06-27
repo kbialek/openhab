@@ -319,6 +319,7 @@ public abstract class SatelModule extends EventDispatcher implements SatelEventL
 	}
 
 	private synchronized void disconnect() {
+		logger.debug("Disconnecting.");
 		this.sendQueue.clear();
 		if (this.channel != null) {
 			this.channel.disconnect();
@@ -330,7 +331,7 @@ public abstract class SatelModule extends EventDispatcher implements SatelEventL
 		long reconnectionTime = 10 * 1000;
 
 		try {
-			while (!Thread.interrupted()) {
+			while (!Thread.currentThread().isInterrupted()) {
 				SatelMessage message = this.sendQueue.take(), response = null;
 				SatelCommand command = this.supportedCommands.get(message.getCommand());
 
@@ -374,6 +375,7 @@ public abstract class SatelModule extends EventDispatcher implements SatelEventL
 			}
 		} catch (InterruptedException e) {
 			// exit thread
+			logger.debug("Communication loop thread interrupted.", e);
 		} catch (Exception e) {
 			// unexpected error, log and exit thread
 			logger.info("Unhandled exception occurred in communication loop, disconnecting.", e);
@@ -439,8 +441,11 @@ public abstract class SatelModule extends EventDispatcher implements SatelEventL
 				@Override
 				public void run() {
 					logger.debug("Communication thread started");
-					SatelModule.this.communicationLoop(CommunicationWatchdog.this);
-					logger.debug("Communication thread stopped");
+					try {
+						SatelModule.this.communicationLoop(CommunicationWatchdog.this);
+					} finally {
+						logger.debug("Communication thread stopped");
+					}
 				}
 			});
 			this.thread.start();
