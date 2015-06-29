@@ -1,38 +1,53 @@
 package org.openhab.binding.ilight.internal;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.openhab.binding.ilight.ILightBindingProvider;
 import org.openhab.core.binding.AbstractActiveBinding;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.types.Command;
-import org.openhab.core.types.State;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider> implements ManagedService {
+public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
+		implements ManagedService {
 
-	private static final Logger logger = LoggerFactory.getLogger(ILightBinding.class);   
-	
-	private final Map<String, InetAddress> hostMap = new HashMap<>();
-	
+	private static final Logger logger = LoggerFactory
+			.getLogger(ILightBinding.class);
+
+	private final Map<String, InetAddress> hostMap = new HashMap<String, InetAddress>();
+
+	private Executor executor = Executors.newSingleThreadExecutor();
+
 	@Override
 	protected void execute() {
-		// TODO Auto-generated method stub
 		
 	}
 	
+	private String findHostByAddress(InetAddress addr) {
+		for (Map.Entry<String, InetAddress> kv : hostMap.entrySet()) {
+			if (kv.getValue().equals(addr)) {
+				return kv.getKey();
+			}
+		}
+		return null;
+	}
+
 	@Override
 	protected void internalReceiveCommand(String itemName, Command command) {
 		for (ILightBindingProvider provider : providers) {
@@ -48,25 +63,28 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider> 
 					state = 0;
 				}
 
-				send(host, new byte[] {1, out.byteValue(), state});
+				send(host, new byte[] { 1, out.byteValue(), state });
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}
 	}
-	
-    private byte[] send(InetAddress host, byte[] requestData) throws IOException {
-        DatagramSocket socket = new DatagramSocket();
-        DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, host, 9999);
-        byte[] responseData = new byte[128];
-        DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length);
-        socket.send(requestPacket);
-        socket.receive(responsePacket);
-        byte[] result = responsePacket.getData();
-        socket.close();
-        return result;
-    }
-	
+
+	private byte[] send(InetAddress host, byte[] requestData)
+			throws IOException {
+		DatagramSocket socket = new DatagramSocket();
+		DatagramPacket requestPacket = new DatagramPacket(requestData,
+				requestData.length, host, 9999);
+		byte[] responseData = new byte[128];
+		DatagramPacket responsePacket = new DatagramPacket(responseData,
+				responseData.length);
+		socket.send(requestPacket);
+		socket.receive(responsePacket);
+		byte[] result = responsePacket.getData();
+		socket.close();
+		return result;
+	}
+
 	@Override
 	protected long getRefreshInterval() {
 		return 1000;
@@ -83,26 +101,81 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider> 
 		try {
 			if (properties != null) {
 				Enumeration<String> keys = properties.keys();
-				while(keys.hasMoreElements()) {
+				while (keys.hasMoreElements()) {
 					String key = keys.nextElement();
 					String[] parts = key.split("\\.");
-					if ("host".equals(parts[1])) {
-						InetAddress host = Inet4Address.getByName((String) properties.get(key));
-						hostMap.put(parts[0], host);		
+					if (parts.length == 2 && "host".equals(parts[1])) {
+						InetAddress host = Inet4Address
+								.getByName((String) properties.get(key));
+						hostMap.put(parts[0], host);
+					} else if ("notificationPort".equals(key)) {
+						Integer port = Integer.valueOf((String) properties
+								.get(key));
+						executor.execute(new NotificationServer(port));
+						logger.info("ILight binding notification port configured. Listening on "
+								+ port);
 					}
 				}
-				
+
 				setProperlyConfigured(true);
 			}
 		} catch (Exception e) {
-			throw new ConfigurationException("", "");
+			throw new ConfigurationException("", "", e);
 		}
 	}
 
-//	@Override
-//	public void addBindingProvider(ILightBindingProvider provider) {
-//		super.addBindingProvider(provider);
-//	}
-//	
-	
+	// @Override
+	// public void addBindingProvider(ILightBindingProvider provider) {
+	// super.addBindingProvider(provider);
+	// }
+	//
+	private class NotificationServer implements Runnable {
+
+		private DatagramSocket notificationSocket;
+
+		public NotificationServer(int port) throws ConfigurationException {
+			try {
+				notificationSocket = new DatagramSocket(port,
+						InetAddress.getByName("0.0.0.0"));
+			} catch (SocketException | UnknownHostException e) {
+				throw new ConfigurationException("notificationPort", "", e);
+			}
+		}
+
+		@Override
+		public void run() {
+			while (!Thread.currentThread().isInterrupted()) {
+				byte[] buf = new byte[128];
+				DatagramPacket packet = new DatagramPacket(buf, buf.length);
+				try {
+					notificationSocket.receive(packet);
+					processNotifications(packet.getAddress(), buf);
+				} catch (IOException e) {
+				}
+			}
+		}
+		
+		private void processNotifications(InetAddress addr, byte[] receiveData) {
+			if (addr != null) {
+				String uid = ILightBinding.this.findHostByAddress(addr);
+
+				ByteArrayInputStream is = new ByteArrayInputStream(receiveData);
+				// Triac Output changed
+				while (is.read() == 1) {
+					int out = is.read();
+					boolean state = is.read() != 0;
+					for (ILightBindingProvider provider : providers) {
+						for (String itemName : provider.getItemNames()) {
+							if (provider.getUID(itemName).equals(uid)
+									&& out == provider.getOut(itemName)) {
+								eventPublisher.postUpdate(itemName,
+										state ? OnOffType.ON : OnOffType.OFF);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 }
