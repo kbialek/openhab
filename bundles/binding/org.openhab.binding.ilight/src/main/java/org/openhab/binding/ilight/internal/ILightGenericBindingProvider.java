@@ -12,27 +12,23 @@ import org.openhab.model.item.binding.BindingConfigParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ILightGenericBindingProvider extends
-		AbstractGenericBindingProvider implements ILightBindingProvider {
+public class ILightGenericBindingProvider extends AbstractGenericBindingProvider implements ILightBindingProvider {
 
-	static final Logger logger = 
-			LoggerFactory.getLogger(ILightGenericBindingProvider.class);
+	static final Logger logger = LoggerFactory.getLogger(ILightGenericBindingProvider.class);
 
-	
 	@Override
 	public String getBindingType() {
 		return "ilight";
 	}
 
 	@Override
-	public void validateItemType(Item item, String bindingConfig)
-			throws BindingConfigParseException {
+	public void validateItemType(Item item, String bindingConfig) throws BindingConfigParseException {
 		// accept all
 	}
-	
+
 	@Override
-	public void processBindingConfiguration(String context, Item item,
-			String bindingConfig) throws BindingConfigParseException {
+	public void processBindingConfiguration(String context, Item item, String bindingConfig)
+			throws BindingConfigParseException {
 		super.processBindingConfiguration(context, item, bindingConfig);
 
 		String multiLineProps = bindingConfig.replaceAll(",", "\n");
@@ -42,17 +38,26 @@ public class ILightGenericBindingProvider extends
 		} catch (IOException e) {
 			throw new BindingConfigParseException(e.getMessage());
 		}
-		
+
 		ILightBindingConfig config = new ILightBindingConfig();
+		config.type = ILightBindingType.from(props.getProperty("type"));
 		config.uid = props.getProperty("uid");
-		config.out = Integer.valueOf(props.getProperty("out"));
-				
+		String outString = props.getProperty("out");
+		config.out = outString != null ? Integer.valueOf(outString) : -1;
+
 		addBindingConfig(item, config);
 	}
 
 	static private class ILightBindingConfig implements BindingConfig {
+		public ILightBindingType type;
 		public String uid;
 		public int out;
+	}
+
+	@Override
+	public ILightBindingType getType(String itemName) {
+		ILightBindingConfig config = (ILightBindingConfig) this.bindingConfigs.get(itemName);
+		return config.type;
 	}
 
 	@Override
@@ -60,11 +65,11 @@ public class ILightGenericBindingProvider extends
 		ILightBindingConfig config = (ILightBindingConfig) this.bindingConfigs.get(itemName);
 		return config.uid;
 	}
-	
+
 	@Override
 	public Integer getOut(String itemName) {
 		ILightBindingConfig config = (ILightBindingConfig) this.bindingConfigs.get(itemName);
 		return config.out;
 	}
-	
+
 }

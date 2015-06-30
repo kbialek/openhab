@@ -24,11 +24,9 @@ import org.osgi.service.cm.ManagedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
-		implements ManagedService {
+public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider> implements ManagedService {
 
-	private static final Logger logger = LoggerFactory
-			.getLogger(ILightBinding.class);
+	private static final Logger logger = LoggerFactory.getLogger(ILightBinding.class);
 
 	private final Map<String, InetAddress> hostMap = new HashMap<String, InetAddress>();
 
@@ -36,9 +34,9 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
 
 	@Override
 	protected void execute() {
-		
+
 	}
-	
+
 	private String findHostByAddress(InetAddress addr) {
 		for (Map.Entry<String, InetAddress> kv : hostMap.entrySet()) {
 			if (kv.getValue().equals(addr)) {
@@ -53,31 +51,23 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
 		for (ILightBindingProvider provider : providers) {
 			String uid = provider.getUID(itemName);
 			InetAddress host = hostMap.get(uid);
-			Integer out = provider.getOut(itemName);
 			logger.info("Host: " + host);
 			try {
-				byte state = 0;
-				if (command == OnOffType.ON) {
-					state = 1;
-				} else if (command == OnOffType.OFF) {
-					state = 0;
+				byte[] request = ILightRequestFactory.createSetState(itemName, provider, command);
+				if (request != null) {
+					send(host, request);
 				}
-
-				send(host, new byte[] { 1, out.byteValue(), state });
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 		}
 	}
 
-	private byte[] send(InetAddress host, byte[] requestData)
-			throws IOException {
+	private byte[] send(InetAddress host, byte[] requestData) throws IOException {
 		DatagramSocket socket = new DatagramSocket();
-		DatagramPacket requestPacket = new DatagramPacket(requestData,
-				requestData.length, host, 9999);
+		DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, host, 9999);
 		byte[] responseData = new byte[128];
-		DatagramPacket responsePacket = new DatagramPacket(responseData,
-				responseData.length);
+		DatagramPacket responsePacket = new DatagramPacket(responseData, responseData.length);
 		socket.send(requestPacket);
 		socket.receive(responsePacket);
 		byte[] result = responsePacket.getData();
@@ -96,8 +86,7 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
 	}
 
 	@Override
-	public void updated(Dictionary<String, ?> properties)
-			throws ConfigurationException {
+	public void updated(Dictionary<String, ?> properties) throws ConfigurationException {
 		try {
 			if (properties != null) {
 				Enumeration<String> keys = properties.keys();
@@ -105,15 +94,12 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
 					String key = keys.nextElement();
 					String[] parts = key.split("\\.");
 					if (parts.length == 2 && "host".equals(parts[1])) {
-						InetAddress host = Inet4Address
-								.getByName((String) properties.get(key));
+						InetAddress host = Inet4Address.getByName((String) properties.get(key));
 						hostMap.put(parts[0], host);
 					} else if ("notificationPort".equals(key)) {
-						Integer port = Integer.valueOf((String) properties
-								.get(key));
+						Integer port = Integer.valueOf((String) properties.get(key));
 						executor.execute(new NotificationServer(port));
-						logger.info("ILight binding notification port configured. Listening on "
-								+ port);
+						logger.info("ILight binding notification port configured. Listening on " + port);
 					}
 				}
 
@@ -135,8 +121,7 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
 
 		public NotificationServer(int port) throws ConfigurationException {
 			try {
-				notificationSocket = new DatagramSocket(port,
-						InetAddress.getByName("0.0.0.0"));
+				notificationSocket = new DatagramSocket(port, InetAddress.getByName("0.0.0.0"));
 			} catch (SocketException | UnknownHostException e) {
 				throw new ConfigurationException("notificationPort", "", e);
 			}
@@ -154,24 +139,40 @@ public class ILightBinding extends AbstractActiveBinding<ILightBindingProvider>
 				}
 			}
 		}
-		
+
 		private void processNotifications(InetAddress addr, byte[] receiveData) {
 			if (addr != null) {
 				String uid = ILightBinding.this.findHostByAddress(addr);
 
 				ByteArrayInputStream is = new ByteArrayInputStream(receiveData);
-				// Triac Output changed
-				while (is.read() == 1) {
-					int out = is.read();
-					boolean state = is.read() != 0;
-					for (ILightBindingProvider provider : providers) {
-						for (String itemName : provider.getItemNames()) {
-							if (provider.getUID(itemName).equals(uid)
-									&& out == provider.getOut(itemName)) {
-								eventPublisher.postUpdate(itemName,
-										state ? OnOffType.ON : OnOffType.OFF);
+
+				for (;;) {
+					int code = is.read();
+					// Triac Output changed
+					if (code == 1) {
+						int out = is.read();
+						boolean state = is.read() != 0;
+						for (ILightBindingProvider provider : providers) {
+							for (String itemName : provider.getItemNames()) {
+								if (provider.getType(itemName) == ILightBindingType.Triac
+										&& provider.getUID(itemName).equals(uid) && out == provider.getOut(itemName)) {
+									eventPublisher.postUpdate(itemName, state ? OnOffType.ON : OnOffType.OFF);
+								}
 							}
 						}
+					} else if (code == 2) {
+						// LED Output changed
+						boolean state = is.read() != 0;
+						for (ILightBindingProvider provider : providers) {
+							for (String itemName : provider.getItemNames()) {
+								if (provider.getType(itemName) == ILightBindingType.Led
+										&& provider.getUID(itemName).equals(uid)) {
+									eventPublisher.postUpdate(itemName, state ? OnOffType.ON : OnOffType.OFF);
+								}
+							}
+						}
+					} else {
+						break;
 					}
 				}
 			}
